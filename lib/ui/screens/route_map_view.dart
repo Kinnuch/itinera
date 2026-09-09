@@ -12,6 +12,8 @@ import '../../domain/route/route_builder.dart';
 import '../../services/export/file_saver.dart';
 import '../../providers/trip_providers.dart';
 import '../../services/map/map_provider.dart';
+import '../../services/map/tile_sources.dart';
+import '../../providers/app_providers.dart';
 
 /// 功能点 4：最终生成路径路线图。
 ///
@@ -42,9 +44,9 @@ class _RouteMapViewState extends ConsumerState<RouteMapView> {
   @override
   Widget build(BuildContext context) {
     final routeAsync = ref.watch(tripRouteProvider(widget.tripId));
-    final provider = ref.watch(tripMapProviderProvider(widget.tripId)).valueOrNull ??
-        const OsmProvider();
-    final adapter = MapDisplayAdapter(provider.tileSource.datum);
+    // 底图与搜索服务商解绑：高德瓦片不要密钥，没配 Key 也该拿到快底图。
+    final tiles = ref.watch(tripBaseMapProvider(widget.tripId)).valueOrNull ?? BaseMaps.amap;
+    final adapter = MapDisplayAdapter(tiles.datum);
 
     return routeAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -78,11 +80,19 @@ class _RouteMapViewState extends ConsumerState<RouteMapView> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: provider.tileSource.urlTemplate,
-                    subdomains: provider.tileSource.subdomains,
-                    maxZoom: provider.tileSource.maxZoom,
+                    urlTemplate: tiles.urlTemplate,
+                    subdomains: tiles.subdomains,
+                    maxZoom: tiles.maxZoom,
                     userAgentPackageName: 'io.github.kinnuch.itinera',
                   ),
+                  // 卫星影像没有路名，叠一层路网注记才认得出路。
+                  if (tiles.overlay != null)
+                    TileLayer(
+                      urlTemplate: tiles.overlay!.urlTemplate,
+                      subdomains: tiles.overlay!.subdomains,
+                      maxZoom: tiles.overlay!.maxZoom,
+                      userAgentPackageName: 'io.github.kinnuch.itinera',
+                    ),
                   PolylineLayer(
                     polylines: [
                       for (final day in visible)
@@ -117,6 +127,11 @@ class _RouteMapViewState extends ConsumerState<RouteMapView> {
               ),
             ),
             Positioned(
+              right: 12,
+              top: 56,
+              child: _BaseMapButton(onTap: _showBaseMapSheet),
+            ),
+            Positioned(
               left: 0,
               right: 0,
               top: 8,
@@ -133,7 +148,7 @@ class _RouteMapViewState extends ConsumerState<RouteMapView> {
               bottom: 12,
               child: _RouteSummaryCard(
                 days: visible,
-                attribution: provider.tileSource.attribution,
+                attribution: tiles.attribution,
                 onExport: _exportImage,
               ),
             ),
@@ -158,6 +173,58 @@ class _RouteMapViewState extends ConsumerState<RouteMapView> {
     });
   }
 
+  /// 底图切换面板。放在地图上而不是只藏在设置里：
+  /// 换底图是看图过程中的即时需求，不该要求用户退出去改设置再回来。
+  Future<void> _showBaseMapSheet() async {
+    final settings = ref.read(settingsProvider).valueOrNull;
+    if (settings == null) return;
+    final hasMapboxToken = (settings.mapboxToken ?? '').isNotEmpty;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('底图', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              ),
+            ),
+            RadioGroup<BaseMapChoice>(
+              groupValue: settings.baseMap,
+              onChanged: (value) {
+                if (value == null) return;
+                ref.read(settingsProvider.notifier).save(settings.copyWith(baseMap: value));
+                Navigator.pop(sheetContext);
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final choice in BaseMapChoice.values)
+                    RadioListTile<BaseMapChoice>(
+                      value: choice,
+                      dense: true,
+                      title: Text(choice.label),
+                      subtitle: Text(
+                        choice == BaseMapChoice.mapbox && !hasMapboxToken
+                            ? '需要先在设置里填 Access Token，否则回落到高德'
+                            : choice.hint,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// 把当前地图视图渲染成 PNG 并调起系统分享，用于发给同行的人。
   Future<void> _exportImage() async {
     try {
@@ -180,6 +247,32 @@ class _RouteMapViewState extends ConsumerState<RouteMapView> {
             .showSnackBar(SnackBar(content: Text('导出失败：$error')));
       }
     }
+  }
+}
+
+class _BaseMapButton extends StatelessWidget {
+  const _BaseMapButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.surface.withValues(alpha: 0.94),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(9),
+          child: Icon(Icons.layers_outlined, size: 20, color: scheme.onSurface),
+        ),
+      ),
+    );
   }
 }
 

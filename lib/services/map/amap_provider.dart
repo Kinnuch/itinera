@@ -7,6 +7,7 @@ import '../../core/geo.dart';
 import '../../data/models/enums.dart';
 import '../../data/models/location.dart';
 import 'map_provider.dart';
+import 'tile_sources.dart';
 
 /// 高德 Web 服务 API。境内 POI、公交换乘、路况都比国际服务商准。
 /// 高德全程使用 GCJ-02，进出本类时统一与 WGS-84 互转。
@@ -29,14 +30,7 @@ class AmapProvider implements MapProvider {
   bool get isConfigured => webKey != null && webKey!.isNotEmpty;
 
   @override
-  TileSource get tileSource => const TileSource(
-        urlTemplate:
-            'https://webst0{s}.is.autonavi.com/appmaptile?style=7&x={x}&y={y}&z={z}',
-        subdomains: ['1', '2', '3', '4'],
-        attribution: '© 高德地图',
-        datum: GeoDatum.gcj02,
-        maxZoom: 18,
-      );
+  TileSource get tileSource => BaseMaps.amap;
 
   @override
   Future<List<GeoPlace>> searchPlaces(String keyword, {LatLng? near}) async {

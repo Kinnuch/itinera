@@ -7,6 +7,7 @@ import '../../core/geo.dart';
 import '../../data/models/enums.dart';
 import '../../data/models/location.dart';
 import 'map_provider.dart';
+import 'tile_sources.dart';
 
 /// Mapbox。境外行程用它：全球覆盖、原生 WGS-84，不需要坐标偏移。
 class MapboxProvider implements MapProvider {
@@ -28,16 +29,8 @@ class MapboxProvider implements MapProvider {
   bool get isConfigured => token != null && token!.isNotEmpty;
 
   @override
-  TileSource get tileSource {
-    if (!isConfigured) return OsmProvider.osmTileSource;
-    return TileSource(
-      urlTemplate:
-          'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=$token',
-      attribution: '© Mapbox © OpenStreetMap',
-      datum: GeoDatum.wgs84,
-      maxZoom: 20,
-    );
-  }
+  TileSource get tileSource =>
+      isConfigured ? BaseMaps.mapbox(token!) : BaseMaps.osm;
 
   @override
   Future<List<GeoPlace>> searchPlaces(String keyword, {LatLng? near}) async {

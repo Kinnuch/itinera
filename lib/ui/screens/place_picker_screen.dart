@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 import '../../data/models/location.dart';
 import '../../providers/trip_providers.dart';
 import '../../services/map/map_provider.dart';
+import '../../services/map/tile_sources.dart';
 
 /// 选地点：关键词搜索 + 直接在地图上点。
 ///
@@ -49,9 +50,11 @@ class _PlacePickerScreenState extends ConsumerState<PlacePickerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final providerAsync = ref.watch(tripMapProviderProvider(widget.tripId));
-    final provider = providerAsync.valueOrNull ?? const OsmProvider();
-    final adapter = MapDisplayAdapter(provider.tileSource.datum);
+    final provider =
+        ref.watch(tripMapProviderProvider(widget.tripId)).valueOrNull ?? const OsmProvider();
+    // 底图独立于服务商：没配高德 Key 时仍然用高德的快底图，只是不能搜索。
+    final tiles = ref.watch(tripBaseMapProvider(widget.tripId)).valueOrNull ?? BaseMaps.amap;
+    final adapter = MapDisplayAdapter(tiles.datum);
     final center = _picked?.latLng ?? const LatLng(35.0116, 135.7681); // 兜底：京都
 
     return Scaffold(
@@ -121,11 +124,18 @@ class _PlacePickerScreenState extends ConsumerState<PlacePickerScreen> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: provider.tileSource.urlTemplate,
-                      subdomains: provider.tileSource.subdomains,
-                      maxZoom: provider.tileSource.maxZoom,
+                      urlTemplate: tiles.urlTemplate,
+                      subdomains: tiles.subdomains,
+                      maxZoom: tiles.maxZoom,
                       userAgentPackageName: 'io.github.kinnuch.itinera',
                     ),
+                    if (tiles.overlay != null)
+                      TileLayer(
+                        urlTemplate: tiles.overlay!.urlTemplate,
+                        subdomains: tiles.overlay!.subdomains,
+                        maxZoom: tiles.overlay!.maxZoom,
+                        userAgentPackageName: 'io.github.kinnuch.itinera',
+                      ),
                     if (_picked?.latLng != null)
                       MarkerLayer(
                         markers: [
@@ -147,7 +157,7 @@ class _PlacePickerScreenState extends ConsumerState<PlacePickerScreen> {
                   left: 12,
                   right: 12,
                   bottom: 12,
-                  child: _PickedCard(place: _picked, attribution: provider.tileSource.attribution),
+                  child: _PickedCard(place: _picked, attribution: tiles.attribution),
                 ),
               ],
             ),

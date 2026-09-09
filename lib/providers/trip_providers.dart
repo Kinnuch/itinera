@@ -8,6 +8,7 @@ import '../domain/review/itinerary_reviewer.dart';
 import '../domain/review/rules/route_rules.dart';
 import '../domain/route/route_builder.dart';
 import '../services/map/map_provider.dart';
+import '../services/map/tile_sources.dart';
 import 'app_providers.dart';
 
 /// 一趟行程的完整可编辑状态。
@@ -158,6 +159,14 @@ final tripMapProviderProvider =
   final state = await ref.watch(tripControllerProvider(tripId).future);
   final resolver = ref.watch(mapProviderResolverProvider);
   return resolver?.forItems(state.items) ?? const OsmProvider();
+});
+
+/// 当前行程该用哪张底图。跟着设置和行程位置走，与搜索服务商无关。
+final tripBaseMapProvider =
+    FutureProvider.family<TileSource, String>((ref, tripId) async {
+  final state = await ref.watch(tripControllerProvider(tripId).future);
+  final resolver = ref.watch(mapProviderResolverProvider);
+  return resolver?.baseMapForItems(state.items) ?? BaseMaps.amap;
 });
 
 /// 路线图数据。导航请求有缓存，重复进入不会重复计费。

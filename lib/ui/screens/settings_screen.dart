@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/repositories/settings_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../services/map/tile_sources.dart';
 import '../widgets/money_field.dart';
 
 /// 设置页：汇总币种、地图密钥、体检阈值。
@@ -64,10 +65,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 24),
 
-              const _Section('地图服务'),
+              const _Section('底图'),
               Text(
-                '国内行程走高德，境外行程走 Mapbox，应用会按行程位置自动选择。'
-                '两个都不填也能用：可以在地图上手动点选位置，但没有搜索和真实导航路径。',
+                '底图不需要任何密钥。国内用高德，实测一张瓦片约 60 毫秒；'
+                'OpenStreetMap 官方瓦片在国内约 2.5 秒，慢 40 倍，除非在境外否则不建议选。',
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.5,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              RadioGroup<BaseMapChoice>(
+                groupValue: settings.baseMap,
+                onChanged: (value) {
+                  if (value != null) _save(settings.copyWith(baseMap: value));
+                },
+                child: Column(
+                  children: [
+                    for (final choice in BaseMapChoice.values)
+                      RadioListTile<BaseMapChoice>(
+                        value: choice,
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(choice.label),
+                        subtitle: Text(
+                          choice == BaseMapChoice.mapbox &&
+                                  (settings.mapboxToken ?? '').isEmpty
+                              ? '需要下面的 Access Token，没填则回落到高德'
+                              : choice.hint,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              const _Section('搜索与路径规划'),
+              Text(
+                '这里的密钥只影响「搜地点」「反查地址」「算真实导航路径」三件事，'
+                '不影响底图。国内行程用高德，境外用 Mapbox，按行程位置自动选择。'
+                '都不填也能用：在地图上长按选点即可，只是路线按直线估算（图上画虚线）。',
                 style: TextStyle(
                   fontSize: 12,
                   height: 1.5,

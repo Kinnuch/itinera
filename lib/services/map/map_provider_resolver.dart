@@ -6,6 +6,7 @@ import '../../data/repositories/settings_repository.dart';
 import 'amap_provider.dart';
 import 'map_provider.dart';
 import 'mapbox_provider.dart';
+import 'tile_sources.dart';
 
 /// 按行程的地理位置选服务商：境内走高德，境外走 Mapbox，密钥缺失时逐级降级。
 ///
@@ -16,19 +17,37 @@ class MapProviderResolver {
 
   final AppSettings settings;
 
-  MapProvider forItems(Iterable<PlanItem> items) {
-    final points = items
-        .map((i) => i.anchorPlace?.latLng ?? i.originPlace?.latLng)
-        .whereType<LatLng>()
-        .toList();
-    return forPoints(points);
+  /// 底图。与搜索/导航服务商分开解析：高德瓦片无需密钥，
+  /// 所以「没配 Key」绝不该把底图也退回国内很慢的 OSM。
+  TileSource baseMapForItems(Iterable<PlanItem> items) {
+    if (settings.baseMap != BaseMapChoice.auto) {
+      return BaseMaps.resolve(settings.baseMap, mapboxToken: settings.mapboxToken);
+    }
+    return BaseMaps.resolveAuto(
+      domestic: _isDomestic(_pointsOf(items)),
+      mapboxToken: settings.mapboxToken,
+    );
   }
+
+  /// 行程还没有任何坐标时按境内处理：这是最快且无需密钥的选择，
+  /// 用户一旦加了境外地点，auto 会自己切过去。
+  bool _isDomestic(List<LatLng> points) {
+    if (points.isEmpty) return true;
+    final inChina = points.where((p) => !GeoUtils.outOfChina(p)).length;
+    return inChina * 2 >= points.length;
+  }
+
+  List<LatLng> _pointsOf(Iterable<PlanItem> items) => items
+      .map((i) => i.anchorPlace?.latLng ?? i.originPlace?.latLng)
+      .whereType<LatLng>()
+      .toList();
+
+  MapProvider forItems(Iterable<PlanItem> items) => forPoints(_pointsOf(items));
 
   MapProvider forPoints(List<LatLng> points) {
     if (points.isEmpty) return _preferred();
-    final inChina = points.where((p) => !GeoUtils.outOfChina(p)).length;
-    final domestic = inChina * 2 >= points.length; // 半数以上在境内即按境内处理
-    return domestic ? _amapOrFallback() : _mapboxOrFallback();
+    // 半数以上在境内即按境内处理
+    return _isDomestic(points) ? _amapOrFallback() : _mapboxOrFallback();
   }
 
   MapProvider get amap => AmapProvider(webKey: settings.amapWebKey);

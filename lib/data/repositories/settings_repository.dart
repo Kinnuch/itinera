@@ -1,10 +1,13 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../services/map/tile_sources.dart';
+
 /// 用户级设置：汇总币种、地图密钥、体检阈值。
 /// 密钥放在设备本地而不是打包进二进制，方便用户填自己的配额。
 class AppSettings {
   const AppSettings({
     this.homeCurrency = 'CNY',
+    this.baseMap = BaseMapChoice.auto,
     this.amapWebKey,
     this.mapboxToken,
     this.maxActiveHoursPerDay = 12,
@@ -15,6 +18,11 @@ class AppSettings {
   });
 
   final String homeCurrency;
+
+  /// 底图选择。与下面两个密钥无关——高德瓦片不需要密钥，
+  /// 密钥只影响搜索、逆地理和真实导航路径。
+  final BaseMapChoice baseMap;
+
   final String? amapWebKey;
   final String? mapboxToken;
 
@@ -33,6 +41,7 @@ class AppSettings {
 
   AppSettings copyWith({
     String? homeCurrency,
+    BaseMapChoice? baseMap,
     String? Function()? amapWebKey,
     String? Function()? mapboxToken,
     int? maxActiveHoursPerDay,
@@ -43,6 +52,7 @@ class AppSettings {
   }) {
     return AppSettings(
       homeCurrency: homeCurrency ?? this.homeCurrency,
+      baseMap: baseMap ?? this.baseMap,
       amapWebKey: amapWebKey != null ? amapWebKey() : this.amapWebKey,
       mapboxToken: mapboxToken != null ? mapboxToken() : this.mapboxToken,
       maxActiveHoursPerDay: maxActiveHoursPerDay ?? this.maxActiveHoursPerDay,
@@ -56,6 +66,7 @@ class AppSettings {
 
 class SettingsRepository {
   static const _kHomeCurrency = 'home_currency';
+  static const _kBaseMap = 'base_map';
   static const _kAmapKey = 'amap_web_key';
   static const _kMapboxToken = 'mapbox_token';
   static const _kMaxHours = 'max_active_hours';
@@ -69,6 +80,7 @@ class SettingsRepository {
     const fallback = AppSettings();
     return AppSettings(
       homeCurrency: prefs.getString(_kHomeCurrency) ?? fallback.homeCurrency,
+      baseMap: BaseMapChoice.fromName(prefs.getString(_kBaseMap)),
       amapWebKey: prefs.getString(_kAmapKey),
       mapboxToken: prefs.getString(_kMapboxToken),
       maxActiveHoursPerDay: prefs.getInt(_kMaxHours) ?? fallback.maxActiveHoursPerDay,
@@ -82,6 +94,7 @@ class SettingsRepository {
   Future<void> save(AppSettings s) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kHomeCurrency, s.homeCurrency);
+    await prefs.setString(_kBaseMap, s.baseMap.name);
     await _setOrRemove(prefs, _kAmapKey, s.amapWebKey);
     await _setOrRemove(prefs, _kMapboxToken, s.mapboxToken);
     await prefs.setInt(_kMaxHours, s.maxActiveHoursPerDay);

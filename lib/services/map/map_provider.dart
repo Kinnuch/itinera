@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 import '../../core/geo.dart';
 import '../../data/models/enums.dart';
 import '../../data/models/location.dart';
+import 'tile_sources.dart';
 
 /// 瓦片源描述。flutter_map 只认 WGS-84/Web Mercator 的瓦片网格，
 /// 但高德瓦片画的是 GCJ-02 的地物，所以要连同 [datum] 一起传出来，
@@ -15,6 +16,7 @@ class TileSource {
     this.subdomains = const [],
     this.maxZoom = 18,
     this.headers = const {},
+    this.overlay,
   });
 
   final String urlTemplate;
@@ -23,6 +25,10 @@ class TileSource {
   final List<String> subdomains;
   final double maxZoom;
   final Map<String, String> headers;
+
+  /// 叠加在底图之上的第二层瓦片，目前只有卫星图需要——纯卫星影像没有
+  /// 路名和地名，叠一层路网注记才认得出路。null 表示单层。
+  final TileSource? overlay;
 }
 
 /// 一段导航结果。
@@ -97,13 +103,6 @@ class MapDisplayAdapter {
 class OsmProvider implements MapProvider {
   const OsmProvider();
 
-  static const TileSource osmTileSource = TileSource(
-    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '© OpenStreetMap contributors',
-    datum: GeoDatum.wgs84,
-    maxZoom: 19,
-  );
-
   @override
   String get id => 'osm';
 
@@ -114,7 +113,7 @@ class OsmProvider implements MapProvider {
   bool get isConfigured => false;
 
   @override
-  TileSource get tileSource => osmTileSource;
+  TileSource get tileSource => BaseMaps.osm;
 
   @override
   Future<List<GeoPlace>> searchPlaces(String keyword, {LatLng? near}) async => const [];
