@@ -96,7 +96,7 @@ class _RouteMapViewState extends ConsumerState<RouteMapView> {
                             strokeWidth: leg.isEstimated ? 2.5 : 4,
                             // 估算段用点划线区分（flutter_map 的 pattern）
                             pattern: leg.isEstimated
-                                ? StrokePattern.dotted()
+                                ? const StrokePattern.dotted()
                                 : const StrokePattern.solid(),
                           ),
                     ],

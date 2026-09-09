@@ -93,11 +93,18 @@ class ItineraryReviewer {
 
     final all = <Advice>[];
     for (final rule in _rules) {
-      // 单条规则出错不该让整个体检页白屏。
       try {
         all.addAll(rule.check(ctx));
-      } catch (_) {
-        continue;
+      } catch (error, stack) {
+        // 单条规则出错不该让整个体检页白屏，但也绝不能静默吞掉：
+        // debug 与测试下直接炸出来，release 下降级成一条可见的建议。
+        assert(false, '体检规则 ${rule.code} 抛异常：$error / $stack');
+        all.add(Advice(
+          code: 'rule_failed_${rule.code}',
+          severity: AdviceSeverity.warn,
+          title: '有一项检查没能完成',
+          detail: '规则 ${rule.code} 执行出错，这部分结论暂时缺失。',
+        ));
       }
     }
 

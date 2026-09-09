@@ -91,13 +91,13 @@ class Money implements Comparable<Money> {
       case 'KRW':
         return '₩';
       case 'HKD':
-        return 'HK$';
+        return r'HK$';
       case 'TWD':
-        return 'NT$';
+        return r'NT$';
       case 'THB':
         return '฿';
       case 'SGD':
-        return 'S$';
+        return r'S$';
       default:
         return '${currency.toUpperCase()} ';
     }

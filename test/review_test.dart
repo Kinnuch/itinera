@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:itinera/data/models/enums.dart';
 import 'package:itinera/data/models/plan_item.dart';
 import 'package:itinera/data/models/trip.dart';
@@ -9,6 +10,9 @@ import 'package:itinera/domain/review/itinerary_reviewer.dart';
 import 'helpers.dart';
 
 void main() {
+  // 规则文案用 DateFormat('...', 'zh_CN')，纯 Dart 测试里必须先加载 locale 数据
+  setUpAll(() => initializeDateFormatting('zh_CN'));
+
   const settings = AppSettings();
   const calculator = BudgetCalculator();
   final reviewer = ItineraryReviewer();

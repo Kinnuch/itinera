@@ -50,7 +50,7 @@ class MoneyField extends StatelessWidget {
         SizedBox(
           width: 104,
           child: DropdownButtonFormField<String>(
-            value: commonCurrencies.contains(currency) ? currency : commonCurrencies.first,
+            initialValue: commonCurrencies.contains(currency) ? currency : commonCurrencies.first,
             decoration: const InputDecoration(labelText: '币种'),
             items: commonCurrencies
                 .map((c) => DropdownMenuItem(value: c, child: Text(c)))

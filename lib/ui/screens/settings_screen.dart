@@ -46,9 +46,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
             children: [
-              _Section('汇总币种'),
+              const _Section('汇总币种'),
               DropdownButtonFormField<String>(
-                value: MoneyField.commonCurrencies.contains(settings.homeCurrency)
+                initialValue: MoneyField.commonCurrencies.contains(settings.homeCurrency)
                     ? settings.homeCurrency
                     : MoneyField.commonCurrencies.first,
                 decoration: const InputDecoration(
@@ -64,7 +64,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 24),
 
-              _Section('地图服务'),
+              const _Section('地图服务'),
               Text(
                 '国内行程走高德，境外行程走 Mapbox，应用会按行程位置自动选择。'
                 '两个都不填也能用：可以在地图上手动点选位置，但没有搜索和真实导航路径。',
@@ -104,7 +104,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 24),
 
-              _Section('体检阈值'),
+              const _Section('体检阈值'),
               _SliderRow(
                 label: '单日在外时长上限',
                 value: settings.maxActiveHoursPerDay.toDouble(),
@@ -151,7 +151,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  void _save(AppSettings next) => ref.read(settingsProvider.notifier).update(next);
+  void _save(AppSettings next) => ref.read(settingsProvider.notifier).save(next);
 }
 
 class _Section extends StatelessWidget {

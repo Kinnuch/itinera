@@ -130,7 +130,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
           ),
           const SizedBox(height: 16),
 
-          _SectionLabel('时间'),
+          const _SectionLabel('时间'),
           Row(
             children: [
               Expanded(
@@ -202,7 +202,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
             ),
           const SizedBox(height: 20),
 
-          _SectionLabel('花费'),
+          const _SectionLabel('花费'),
           MoneyField(
             controller: _amountController,
             currency: _currency,
@@ -251,7 +251,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
           ],
           const SizedBox(height: 20),
 
-          _SectionLabel('图片'),
+          const _SectionLabel('图片'),
           PhotoStrip(
             attachments: _attachments,
             imageStore: ref.read(imageStoreProvider),
@@ -260,7 +260,7 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
           ),
           const SizedBox(height: 20),
 
-          _SectionLabel('备注'),
+          const _SectionLabel('备注'),
           TextField(
             controller: _noteController,
             maxLines: 4,
