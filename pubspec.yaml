@@ -1,0 +1,46 @@
+name: itinera
+description: 跨平台旅行行程规划：按日安排住宿/餐饮/景点/交通，记账、合理性体检、生成路线图。
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  # Color.withValues 需要 3.27+，ThemeData.cardTheme 收 CardThemeData 需要 3.32+
+  sdk: ">=3.8.0 <4.0.0"
+  flutter: ">=3.32.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # 状态管理（不使用代码生成，避免 build_runner 依赖）
+  flutter_riverpod: ^2.5.1
+
+  # 本地持久化
+  sqflite: ^2.3.3
+  path: ^1.9.0
+  path_provider: ^2.1.4
+  shared_preferences: ^2.3.2
+
+  # 地图渲染（纯 Dart，可挂任意栅格瓦片源：高德 / Mapbox）
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # 网络与工具
+  http: ^1.2.2
+  intl: any  # 版本由 flutter_localizations 钉定
+  uuid: ^4.4.2
+  collection: ^1.18.0
+
+  # 图片与分享
+  image_picker: ^1.1.2
+  share_plus: ^10.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
