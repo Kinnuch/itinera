@@ -22,11 +22,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 不用 flutter-version-file：它要的是确切版本号，而 pubspec 里写的是
+      # 约束 `>=3.32.0`，action 解析不了。stable 当前远高于这个下限。
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          # 需要 3.32+：代码用到 Color.withValues 与 CardThemeData
-          flutter-version-file: pubspec.yaml
           cache: true
 
       - name: Install dependencies
