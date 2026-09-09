@@ -49,12 +49,13 @@ class Schema {
     'CREATE INDEX idx_items_trip_date ON plan_items(trip_id, date, start_minutes, sort_order)',
     '''
     CREATE TABLE attachments (
-      id            TEXT PRIMARY KEY,
-      item_id       TEXT NOT NULL REFERENCES plan_items(id) ON DELETE CASCADE,
-      relative_path TEXT NOT NULL,
-      kind          TEXT NOT NULL DEFAULT 'image',
-      caption       TEXT,
-      sort_order    INTEGER NOT NULL DEFAULT 0
+      id         TEXT PRIMARY KEY,
+      item_id    TEXT NOT NULL REFERENCES plan_items(id) ON DELETE CASCADE,
+      bytes      BLOB NOT NULL,
+      kind       TEXT NOT NULL DEFAULT 'image',
+      mime_type  TEXT NOT NULL DEFAULT 'image/jpeg',
+      caption    TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0
     )
     ''',
     'CREATE INDEX idx_attachments_item ON attachments(item_id, sort_order)',

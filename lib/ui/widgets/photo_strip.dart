@@ -1,27 +1,24 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/models/attachment.dart';
-import '../../services/media/image_store.dart';
+import '../../data/repositories/attachment_repository.dart';
 
 /// 条目图片区：横向缩略图 + 「加图片」按钮。
-/// 支持相册多选和拍照（车票、菜单、房型照片都靠它）。
+/// 车票、菜单、房型照片都靠它。
+///
+/// 选图统一交出 [XFile]，由仓储读字节入库——浏览器里拿不到文件路径，
+/// 只有 XFile 这层抽象在三端行为一致。
 class PhotoStrip extends StatelessWidget {
   const PhotoStrip({
     super.key,
     required this.attachments,
-    required this.imageStore,
     required this.onAdd,
     required this.onRemove,
   });
 
   final List<Attachment> attachments;
-  final ImageStore imageStore;
-
-  /// 返回用户选中的原始文件路径列表，由调用方负责入库。
-  final ValueChanged<List<String>> onAdd;
+  final ValueChanged<List<XFile>> onAdd;
   final ValueChanged<Attachment> onRemove;
 
   @override
@@ -42,7 +39,6 @@ class PhotoStrip extends StatelessWidget {
           }
           final attachment = attachments[index];
           return _Preview(
-            store: imageStore,
             attachment: attachment,
             onRemove: () => onRemove(attachment),
             borderColor: scheme.outlineVariant,
@@ -54,14 +50,22 @@ class PhotoStrip extends StatelessWidget {
 
   Future<void> _pick(BuildContext context, ImageSource source) async {
     final picker = ImagePicker();
+    // 选图时就降采样：图片要存进数据库，原图会把库撑爆。
+    const maxWidth = AttachmentRepository.maxImageWidth;
+    const quality = AttachmentRepository.imageQuality;
+
     if (source == ImageSource.camera) {
-      final shot = await picker.pickImage(source: source, imageQuality: 85);
-      if (shot != null) onAdd([shot.path]);
+      final shot = await picker.pickImage(
+        source: source,
+        maxWidth: maxWidth,
+        imageQuality: quality,
+      );
+      if (shot != null) onAdd([shot]);
       return;
     }
     // 相册允许多选：一次把当天的票据都加进来。
-    final files = await picker.pickMultiImage(imageQuality: 85);
-    if (files.isNotEmpty) onAdd(files.map((f) => f.path).toList());
+    final files = await picker.pickMultiImage(maxWidth: maxWidth, imageQuality: quality);
+    if (files.isNotEmpty) onAdd(files);
   }
 }
 
@@ -124,13 +128,11 @@ class _AddButton extends StatelessWidget {
 
 class _Preview extends StatelessWidget {
   const _Preview({
-    required this.store,
     required this.attachment,
     required this.onRemove,
     required this.borderColor,
   });
 
-  final ImageStore store;
   final Attachment attachment;
   final VoidCallback onRemove;
   final Color borderColor;
@@ -141,18 +143,13 @@ class _Preview extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: FutureBuilder<File?>(
-            future: store.resolve(attachment.relativePath),
-            builder: (context, snapshot) {
-              final file = snapshot.data;
-              return SizedBox(
-                width: 92,
-                height: 92,
-                child: file == null
-                    ? ColoredBox(color: borderColor)
-                    : Image.file(file, fit: BoxFit.cover),
-              );
-            },
+          child: Image.memory(
+            attachment.bytes,
+            width: 92,
+            height: 92,
+            fit: BoxFit.cover,
+            cacheWidth: 276,
+            gaplessPlayback: true,
           ),
         ),
         Positioned(

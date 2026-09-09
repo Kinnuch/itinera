@@ -10,13 +10,11 @@ import '../services/currency/exchange_rate_service.dart';
 import '../services/map/map_provider.dart';
 import '../services/map/map_provider_resolver.dart';
 import '../services/map/routing_service.dart';
-import '../services/media/image_store.dart';
 
 final tripRepositoryProvider = Provider((ref) => TripRepository());
 final itemRepositoryProvider = Provider((ref) => ItemRepository());
 final attachmentRepositoryProvider = Provider((ref) => AttachmentRepository());
 final settingsRepositoryProvider = Provider((ref) => SettingsRepository());
-final imageStoreProvider = Provider((ref) => ImageStore());
 final exchangeRateServiceProvider = Provider((ref) => ExchangeRateService());
 final routingServiceProvider = Provider((ref) => RoutingService());
 

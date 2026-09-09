@@ -80,8 +80,8 @@ class TripController extends FamilyAsyncNotifier<TripState, String> {
   }
 
   Future<void> deleteItem(String itemId) async {
+    await ref.read(attachmentRepositoryProvider).removeAllOfItem(itemId);
     await ref.read(itemRepositoryProvider).deleteItem(itemId);
-    await ref.read(imageStoreProvider).deleteItemFolder(itemId);
     await _reload();
   }
 

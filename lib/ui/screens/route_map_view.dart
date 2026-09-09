@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -7,12 +5,11 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../core/geo.dart';
 import '../../core/time_utils.dart';
 import '../../domain/route/route_builder.dart';
+import '../../services/export/file_saver.dart';
 import '../../providers/trip_providers.dart';
 import '../../services/map/map_provider.dart';
 
@@ -171,23 +168,18 @@ class _RouteMapViewState extends ConsumerState<RouteMapView> {
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
       if (bytes == null) return;
 
-      final dir = await getTemporaryDirectory();
-      final file = await _writeBytes(
-        '${dir.path}/itinera_route_${DateTime.now().millisecondsSinceEpoch}.png',
+      await saveBytes(
         bytes.buffer.asUint8List(),
+        filename: 'itinera_route_${DateTime.now().millisecondsSinceEpoch}.png',
+        mimeType: 'image/png',
+        shareText: '我的行程路线图',
       );
-      await Share.shareXFiles([XFile(file)], text: '我的行程路线图');
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('导出失败：$error')));
       }
     }
-  }
-
-  Future<String> _writeBytes(String path, Uint8List bytes) async {
-    final file = await File(path).writeAsBytes(bytes);
-    return file.path;
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/money.dart';
 import '../../core/time_utils.dart';
@@ -254,7 +255,6 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
           const _SectionLabel('图片'),
           PhotoStrip(
             attachments: _attachments,
-            imageStore: ref.read(imageStoreProvider),
             onAdd: _addImages,
             onRemove: _removeImage,
           ),
@@ -345,16 +345,26 @@ class _ItemEditorScreenState extends ConsumerState<ItemEditorScreen> {
     }
   }
 
-  Future<void> _addImages(List<String> paths) async {
+  Future<void> _addImages(List<XFile> files) async {
     final repo = ref.read(attachmentRepositoryProvider);
-    for (final path in paths) {
-      final added = await repo.addImage(
+    var rejected = 0;
+    for (final file in files) {
+      final added = await repo.addFromXFile(
         itemId: _itemId,
-        sourcePath: path,
+        file: file,
         sortOrder: _attachments.length,
       );
       if (!mounted) return;
+      if (added == null) {
+        rejected++;
+        continue;
+      }
       setState(() => _attachments = [..._attachments, added]);
+    }
+    if (rejected > 0 && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('有 $rejected 张图片超过 4MB，没有加入')),
+      );
     }
   }
 

@@ -17,7 +17,7 @@ dependencies:
   # 状态管理（不使用代码生成，避免 build_runner 依赖）
   flutter_riverpod: ^2.5.1
 
-  # 本地持久化
+  # 本地持久化：移动端系统 SQLite，浏览器端 wasm SQLite + IndexedDB
   sqflite: ^2.3.3
   path: ^1.9.0
   path_provider: ^2.1.4
@@ -36,6 +36,10 @@ dependencies:
   # 图片与分享
   image_picker: ^1.1.2
   share_plus: ^10.0.2
+
+  # 浏览器互操作（下载导出图片、申请持久化存储）
+  web: ^1.1.0
+  sqflite_common_ffi_web: ^1.1.2
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,8 @@
 # 行迹 Itinera
 
-跨平台（Android / iOS）旅行行程规划应用。Flutter 单代码库。
+旅行行程规划应用。Flutter 单代码库，同时出 **Web（PWA）/ Android / iOS** 三端。
+
+线上版本：**https://kinnuch.github.io/itinera/** —— 手机浏览器打开后「添加到主屏幕」即为独立应用，可离线使用。
 
 四项核心能力：
 
@@ -15,15 +17,27 @@
 
 ```bash
 cd itinera
-flutter --version          # 需要 Flutter 3.32 或更新（用到 Color.withValues / CardThemeData）
-flutter create .           # 生成 android/ ios/ 平台目录（本仓库只提交了 Dart 源码）
+flutter --version   # 需要 Flutter 3.32 或更新（用到 Color.withValues / CardThemeData）
 flutter pub get
 flutter analyze
-flutter test               # 纯 Dart 逻辑测试，不需要设备
-flutter run                # 接上设备或模拟器
+flutter test        # 纯 Dart 逻辑测试，不需要设备或浏览器
+
+flutter run -d chrome              # 浏览器里跑
+flutter run                        # 接上安卓设备/模拟器
 ```
 
-> **本仓库未包含 `android/` 与 `ios/` 目录**：它们是 `flutter create` 的生成物，包含机器相关的路径与签名配置。执行上面的 `flutter create .` 会按 `pubspec.yaml` 里的 `name` 生成，然后按下一节补两处权限声明。
+### 构建 Web
+
+```bash
+# 生成浏览器端 SQLite 的 wasm 与 worker（换 Flutter 版本或重装依赖后要重跑）
+dart run sqflite_common_ffi_web:setup
+
+# base-href 必须与部署路径一致，否则资源全部 404
+flutter build web --release --base-href /itinera/
+rm -f build/web/canvaskit/*.symbols   # 调试符号表，占 6MB+，线上用不到
+```
+
+推送到 `main` 时 `.github/workflows/deploy.yml` 会自动跑上面这套并发到 GitHub Pages。
 
 ### 平台权限
 
@@ -59,6 +73,30 @@ flutter run                # 接上设备或模拟器
 
 ---
 
+## 三端差异
+
+同一份 Dart 代码出三个平台，只有三处按平台分叉，其余完全共用：
+
+| 关注点 | 移动端 | 浏览器 |
+| --- | --- | --- |
+| 数据库 | 系统 SQLite | 编译成 wasm 的 SQLite，数据落 IndexedDB |
+| 导出路线图 | 写临时文件 + 系统分享面板 | Blob + `<a download>` 触发下载 |
+| 存储可靠性 | 沙盒内，不会被系统清理 | 启动时申请 persistent 配额，仍可能被用户清除 |
+
+分叉点分别在 `AppDatabase._factory`、`services/export/file_saver*.dart`（条件导入）和 `requestPersistentStorage()`。
+
+**图片存数据库而不是文件系统。** 浏览器里没有 `dart:io`，也没有可写的沙盒目录，所以附件字节直接进 `attachments` 表的 BLOB 列，三端一套代码。入库前统一压到 1600px / 质量 80（约 200–400KB），单张超过 4MB 直接拒绝。
+
+## Web 版的数据边界
+
+这一点必须说清楚，它决定了这个 PWA 能不能当主力工具用：
+
+- **数据只存在当前浏览器里。** 换浏览器、换设备都是另一份数据，没有云端同步——GitHub Pages 是纯静态的，没有后端。
+- **可能被清掉。** 应用启动时会调 `navigator.storage.persist()` 申请持久化配额（装成 PWA 后通常直接批准），拿到之后只有用户主动清除网站数据才会丢；没拿到的话，磁盘紧张时浏览器有权回收。
+- **iOS Safari 更严格。** 建议「添加到主屏幕」再用，独立 PWA 的存储比普通标签页耐久得多。
+
+要跨设备同步就必须加后端，那是另一个量级的工程。
+
 ## 架构
 
 ```
@@ -71,7 +109,7 @@ lib/
 ├── services/
 │   ├── map/         MapProvider 抽象 + 高德 / Mapbox / OSM 实现 + 路径缓存
 │   ├── currency/    汇率拉取与本地缓存
-│   └── media/       图片落盘
+│   └── export/      导出文件（条件导入分 web / io 两套实现）
 ├── domain/          纯计算，无 IO，全部可单测
 │   ├── budget/      开销汇总
 │   ├── review/      合理性规则引擎
@@ -159,7 +197,8 @@ UI 层没写 widget 测试：这一层变动频繁，回归价值不如上面这
 
 ## 已知边界
 
-- **本地优先，无云端同步。** 数据存在设备的 sqflite 里，换机不迁移。多人协作编辑同一份行程需要另加后端。
+- **本地优先，无云端同步。** 见上面「Web 版的数据边界」。多人协作编辑同一份行程需要另加后端。
+- **首次加载要下约 4MB。** Flutter Web 的渲染引擎（skwasm/canvaskit）加应用代码，压缩后约 4MB。装成 PWA 后由 Service Worker 缓存，之后离线秒开。
 - **没有景点营业时间数据。** 「周一闭馆」这类冲突查不出来——需要接 POI 详情接口才能补上。
 - **公交换乘只在高德侧可用。** Mapbox Directions 没有 transit profile，境外的地铁段目前按直线估算。
 - **iOS 上没有做 Cupertino 风格分支。** 行程表是密集信息界面，两套控件维护两份布局不划算；滚动物理和返回手势由 Flutter 自动适配平台。

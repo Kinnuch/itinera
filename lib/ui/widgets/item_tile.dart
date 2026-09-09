@@ -1,17 +1,14 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../../core/time_utils.dart';
+import '../../data/models/attachment.dart';
 import '../../data/models/plan_item.dart';
-import '../../services/media/image_store.dart';
 
 /// 时间轴上的一条安排。左侧时间轴，右侧卡片：标题、地点、金额、图片缩略。
 class ItemTile extends StatelessWidget {
   const ItemTile({
     super.key,
     required this.item,
-    required this.imageStore,
     this.onTap,
     this.onLongPress,
     this.isFirst = false,
@@ -20,7 +17,6 @@ class ItemTile extends StatelessWidget {
   });
 
   final PlanItem item;
-  final ImageStore imageStore;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final bool isFirst;
@@ -153,10 +149,8 @@ class ItemTile extends StatelessWidget {
                                   scrollDirection: Axis.horizontal,
                                   itemCount: item.attachments.length,
                                   separatorBuilder: (_, __) => const SizedBox(width: 6),
-                                  itemBuilder: (context, i) => _Thumb(
-                                    store: imageStore,
-                                    relativePath: item.attachments[i].relativePath,
-                                  ),
+                                  itemBuilder: (context, i) =>
+                                      _Thumb(attachment: item.attachments[i]),
                                 ),
                               ),
                             ],
@@ -238,30 +232,25 @@ class _TimelineRail extends StatelessWidget {
   }
 }
 
-/// 缩略图。相对路径 -> 绝对路径的解析是异步的，用 FutureBuilder 兜住。
+/// 缩略图。字节直接在内存里，无需异步解析文件。
 class _Thumb extends StatelessWidget {
-  const _Thumb({required this.store, required this.relativePath});
+  const _Thumb({required this.attachment});
 
-  final ImageStore store;
-  final String relativePath;
+  final Attachment attachment;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<File?>(
-      future: store.resolve(relativePath),
-      builder: (context, snapshot) {
-        final file = snapshot.data;
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: SizedBox(
-            width: 56,
-            height: 56,
-            child: file == null
-                ? ColoredBox(color: Theme.of(context).colorScheme.surfaceContainerHighest)
-                : Image.file(file, fit: BoxFit.cover),
-          ),
-        );
-      },
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.memory(
+        attachment.bytes,
+        width: 56,
+        height: 56,
+        fit: BoxFit.cover,
+        // 缩略图只需要 56 逻辑像素，让引擎按需解码而不是把整张图铺进显存。
+        cacheWidth: 168,
+        gaplessPlayback: true,
+      ),
     );
   }
 }

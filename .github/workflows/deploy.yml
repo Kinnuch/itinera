@@ -1,0 +1,67 @@
+name: Build and deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # 允许在 Actions 页面手动触发一次重新部署
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同时只跑一个部署；新的推送会取消排队中的旧任务，但不打断正在进行的。
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          # 需要 3.32+：代码用到 Color.withValues 与 CardThemeData
+          flutter-version-file: pubspec.yaml
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 生成浏览器端 SQLite 所需的 sqlite3.wasm 与 sqflite_sw.js。
+      # 漏了这一步应用能加载但一开数据库就崩，所以每次构建都重新生成。
+      - name: Set up sqflite web worker
+        run: dart run sqflite_common_ffi_web:setup
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      # base-href 必须与 Pages 的子路径一致，否则所有资源 404。
+      # 项目仓库的 Pages 地址是 https://<用户名>.github.io/<仓库名>/
+      - name: Build web
+        run: flutter build web --release --base-href "/${GITHUB_REPOSITORY#*/}/"
+
+      # 调试符号表只在解析线上堆栈时有用，占 6MB+，不发布。
+      - name: Strip debug symbols
+        run: rm -f build/web/canvaskit/*.symbols
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

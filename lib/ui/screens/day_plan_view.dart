@@ -6,7 +6,6 @@ import '../../core/time_utils.dart';
 import '../../data/models/enums.dart';
 import '../../data/models/plan_item.dart';
 import '../../domain/review/advice.dart';
-import '../../providers/app_providers.dart';
 import '../../providers/trip_providers.dart';
 import '../widgets/advice_tile.dart';
 import '../widgets/day_strip.dart';
@@ -75,7 +74,6 @@ class _DayPlanViewState extends ConsumerState<DayPlanView> {
                       for (var i = 0; i < items.length; i++)
                         ItemTile(
                           item: items[i],
-                          imageStore: ref.read(imageStoreProvider),
                           isFirst: i == 0,
                           isLast: i == items.length - 1,
                           gapLabel: i == 0 ? null : _gapLabel(items[i - 1], items[i]),

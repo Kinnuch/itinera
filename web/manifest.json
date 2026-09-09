@@ -1,0 +1,38 @@
+{
+    "name": "行迹 Itinera · 旅行行程规划",
+    "short_name": "行迹",
+    "start_url": ".",
+    "scope": ".",
+    "display": "standalone",
+    "background_color": "#FAF9F7",
+    "theme_color": "#2E6F6A",
+    "description": "按日安排住宿、餐饮、景点与交通，自动汇总开销、检查行程是否合理，并生成路线图。",
+    "lang": "zh-CN",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "categories": ["travel", "productivity"],
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
